@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Monitor</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    th, td {
+      padding: 15px;
+      text-align: left;
+    }
+    th {
+      background-color: #fff;
+      color: #333;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .status-online {
+      color: #4CAF50; /* green */
+    }
+    .status-offline {
+      color: #f44336; /* red */
+    }
+    form {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      background-color: #fff;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    input[type="text"] {
+      padding: 10px;
+      margin-right: 10px;
+      flex: 1;
+    }
+    input[type="submit"] {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button {
+      padding: 8px 12px;
+      color: white;
+      background-color: #f44336;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #d32f2f;
+    }
+  </style>
+</head>
+<body>
+  <h1>Website Monitor</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Website/IP</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="website-list">
+      <!-- Website list will be populated here -->
+    </tbody>
+  </table>
+
+  <form id="add-website-form">
+    <input type="text" id="website-url" placeholder="Enter website URL or IP" required>
+    <input type="submit" value="Add Website">
+  </form>
+
+  <script>
+    async function fetchWebsites() {
+      const response = await fetch('/api/websites');
+      const websites = await response.json();
+      const websiteList = document.getElementById('website-list');
+      websiteList.innerHTML = '';
+      websites.forEach(website => {
+        const row = document.createElement('tr');
+        const urlCell = document.createElement('td');
+        const statusCell = document.createElement('td');
+        const actionsCell = document.createElement('td');
+        const deleteButton = document.createElement('button');
+        
+        urlCell.textContent = website.url;
+        statusCell.textContent = website.status;
+        statusCell.classList.add(website.status === 'Up' ? 'status-online' : 'status-offline');
+        deleteButton.textContent = 'Delete';
+        deleteButton.onclick = () => deleteWebsite(website.url);
+        
+        actionsCell.appendChild(deleteButton);
+        row.appendChild(urlCell);
+        row.appendChild(statusCell);
+        row.appendChild(actionsCell);
+        websiteList.appendChild(row);
+      });
+    }
+
+    async function addWebsite(event) {
+      event.preventDefault();
+      const url = document.getElementById('website-url').value;
+      const response = await fetch('/api/websites', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      });
+      if (response.ok) {
+        document.getElementById('website-url').value = '';
+        fetchWebsites();
+      } else {
+        alert('Failed to add website');
+      }
+    }
+
+    async function deleteWebsite(url) {
+      const response = await fetch('/api/websites', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url })
+      });
+      if (response.ok) {
+        fetchWebsites();
+      } else {
+        alert('Failed to delete website');
+      }
+    }
+
+    document.getElementById('add-website-form').addEventListener('submit', addWebsite);
+    fetchWebsites();
+    setInterval(fetchWebsites, 60000); // Refresh the website list every minute
+  </script>
+</body>
+</html>
